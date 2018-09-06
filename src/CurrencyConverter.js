@@ -7,32 +7,18 @@ export default class CurrencyConverter extends React.Component {
       currencySymbol: '',
       amount: '',
       conversionRate: 0,
+      result: null
     }
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleChange = this.handleChange.bind(this);
   }
-
-  // componentDidMount() {
-  //   const currencySymbol = 'USD_SGD';
-  //   fetch(`https://free.currencyconverterapi.com/api/v6/convert?q=${currencySymbol}&compact=y`)
-  //     .then(res => res.json())
-  //     .then(data => {
-  //       console.log(data[currencySymbol]['val']);
-  //     })
-  //     .then(err => console.log(err));
-  // }
-  // getRatesAPI = (symbol) => {
-  //   const url = `https://free.currencyconverterapi.com/api/v6/convert?q=${symbol}&compact=y`;
-  //   fetch(url)
-  //     .then(res => res.json())
-  //     .then(data => {
-  //       this.setState({
-  //         conversionSymbol: symbol,
-  //         conversionRate: data[symbol]['val'],
-  //       })
-  //     })
-  //     .then(err => console.log(err));
-  // }
+ 
+  toLocalStorage = (key, value) => {
+    localStorage.setItem(key, value);
+    this.setState({
+      conversionRate: value
+    })
+  }
 
   handleChange = (e) => {
     this.setState({ amount: e.target.value})
@@ -44,14 +30,23 @@ export default class CurrencyConverter extends React.Component {
     const toCurrency = e.target.to.value;
     const currencySymbol = `${fromCurrency}_${toCurrency}`;
     const url = `https://free.currencyconverterapi.com/api/v6/convert?q=${currencySymbol}&compact=y`;
-    
+    const cachedExchangeRate = localStorage.getItem(currencySymbol)
+    if (cachedExchangeRate) {
+      this.setState({
+        conversionRate: cachedExchangeRate,
+        currencySymbol: currencySymbol
+      })
+      return;
+    }
     fetch(url) 
       .then(res => res.json())
       .then(data => {
-        this.setState({
-          currencySymbol: Object.keys(data)[0],
-          conversionRate: data[currencySymbol]['val'], 
-        })
+        this.toLocalStorage(currencySymbol, data[currencySymbol]["val"]);
+        // this.setState({
+        //   currencySymbol: Object.keys(data)[0],
+        //   conversionRate: data[currencySymbol]['val'], 
+        //   result: Number(this.state.amount * data[currencySymbol]['val']).toFixed(2)
+        // })
       });
     
   }
@@ -62,8 +57,10 @@ export default class CurrencyConverter extends React.Component {
         <div>
           <p>symbol: {this.state.currencySymbol}</p>
           <p>amount: {this.state.amount}</p>
-          <p>rate: {this.state.conversionRate}</p>
-          <p>converted rate {this.state.amount * this.state.conversionRate}</p>
+          <p>Exchange Rate: {this.state.conversionRate}</p>
+          <p>
+            converted rate {this.state.amount * this.state.conversionRate}
+          </p>
         </div>
         <form onSubmit={this.handleSubmit}>
           <input type="text" value={this.state.amount.value} onChange={this.handleChange} />
@@ -78,7 +75,7 @@ export default class CurrencyConverter extends React.Component {
             <option value="SGD">SGD</option>
           </select>
           <input type="submit" value="Convert" />
-          <input type="text" value="" placeholder="result" />
+          <input type="text" value={Number(this.state.amount * this.state.conversionRate).toFixed(2)} placeholder="result" />
         </form>
       </div>;
   }
